@@ -1,0 +1,22 @@
+{
+  "name": "februum-ezd",
+  "version": "1.0.0",
+  "description": "Install from source: https://odin-lang.org/docs/install/#macos",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EagleLizard/februum-ezd.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EagleLizard/februum-ezd/issues"
+  },
+  "homepage": "https://github.com/EagleLizard/februum-ezd#readme",
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
