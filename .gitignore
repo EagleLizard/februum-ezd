@@ -17,3 +17,6 @@ package-lock.json
 /lua
 /lua_modules
 /.luarocks
+
+# odin
+src.bin
