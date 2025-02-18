@@ -84,10 +84,8 @@ function transformToHtml(cmNode: commonmark.Node) {
       );
       let termNl = hasNewline ? '\n' : '';
       let termVal = `${termOpen}${innerTxt}${termClose}${termNl}`;
-      let termEl = new ElToken({
-        type: 'term',
+      let termEl = new ElToken('term', 'term', {
         val: termVal,
-        nodeType: 'term',
       });
       elStack.push(termEl);
     }
@@ -101,16 +99,12 @@ function transformToHtml(cmNode: commonmark.Node) {
         if(currNode.literal === null) {
           throw new Error(`unexpected empty text in node: ${currNode.type}`);
         }
-        el = new ElToken({
-          type: 'text',
+        el = new ElToken('text', currNode.type, {
           val: currNode.literal,
-          nodeType: currNode.type,
         });
         break;
       case 'heading':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
+        el = new ElToken('block', currNode.type, {
           level: currNode.level,
         });
         break;
@@ -119,10 +113,7 @@ function transformToHtml(cmNode: commonmark.Node) {
       case 'emph':
       case 'block_quote':
       case 'document':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
-        });
+        el = new ElToken('block', currNode.type);
         break;
       default:
         throw new Error(`no ElToken for type: ${currNode.type}`);

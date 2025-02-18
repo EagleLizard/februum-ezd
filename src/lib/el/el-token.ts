@@ -10,8 +10,6 @@ type ElTokenNodeType = Extract<commonmark.NodeType, (
 )> | 'term'
 
 type ElTokenOpts = {
-  type: ElTokenType;
-  nodeType: ElTokenNodeType;
   val?: string;
   level?: number;
 };
@@ -29,16 +27,15 @@ let elTokenIdCounter = 0n;
 export class ElToken implements ElTokenOpts {
   readonly id: bigint;
   type: ElTokenType;
-  nodeType: ElTokenOpts['nodeType'];
+  nodeType: ElTokenNodeType;
   val?: string;
-  // tag?: ElTokenOpts['tag'];
   level?: number;
-  constructor(opts: ElTokenOpts) {
+  constructor(type: ElTokenType, nodeType: ElTokenNodeType, opts?: ElTokenOpts) {
+    opts = opts ?? {};
     this.id = elTokenIdCounter++;
-    this.type = opts.type;
+    this.type = type;
+    this.nodeType = nodeType;
     this.val = opts.val;
-    this.nodeType = opts.nodeType;
-    // this.tag = opts.tag;
     this.level = opts.level;
   }
 
