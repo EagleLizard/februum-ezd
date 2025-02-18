@@ -12,8 +12,8 @@ export async function md() {
   let test1FilePath = [
     DATA_DIR_PATH,
     'md',
-    // 'test1.md',
-    'test2.md',
+    'test1.md',
+    // 'test2.md',
     // 'test3_p.md',
   ].join(path.sep);
   let fileData = fs.readFileSync(test1FilePath).toString();
@@ -81,6 +81,8 @@ function transformToHtml(cmNode: commonmark.Node) {
         (currEl.nodeType === 'paragraph')
         || (currEl.nodeType === 'heading')
         || (currEl.nodeType === 'block_quote')
+        || (currEl.nodeType === 'list')
+        || (currEl.nodeType === 'item')
       );
       let termNl = hasNewline ? '\n' : '';
       let termVal = `${termOpen}${innerTxt}${termClose}${termNl}`;
@@ -113,6 +115,11 @@ function transformToHtml(cmNode: commonmark.Node) {
       case 'emph':
       case 'block_quote':
       case 'document':
+        el = new ElToken('block', currNode.type);
+        break;
+      case 'list':
+      case 'item':
+      case 'html_inline':
         el = new ElToken('block', currNode.type);
         break;
       default:

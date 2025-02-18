@@ -5,6 +5,7 @@ type ElTokenType = 'text' | 'block' | 'etc' | 'term';
 
 type ElTokenNodeType = Extract<commonmark.NodeType, (
   'heading' | 'paragraph' | 'strong' | 'emph' | 'block_quote'
+  | 'list' | 'item' | 'html_inline'
   | 'text' | 'code' | 'code_block'
   | 'document'
 )> | 'term'
@@ -20,6 +21,8 @@ const EL_TOKEN_TAG_MAP: Partial<Record<ElTokenNodeType, string>> = {
   strong: 'strong',
   emph: 'em',
   block_quote: 'blockquote',
+  list: 'ol',
+  item: 'li',
 };
 
 let elTokenIdCounter = 0n;
