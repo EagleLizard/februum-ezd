@@ -16,7 +16,7 @@ type ElTokenOpts = {
   level?: number;
 };
 
-const EL_TOKEN_TAG_MAP: Record<ElTokenNodeType, string> = {
+const EL_TOKEN_TAG_MAP: Partial<Record<ElTokenNodeType, string>> = {
   heading: 'h',
   paragraph: 'p',
   strong: 'strong',
@@ -43,8 +43,8 @@ export class ElToken implements ElTokenOpts {
   }
 
   hasClose(): boolean {
-    // return this.type === 'block' && this.val !== 'p';
-    return this.type === 'block' && this.nodeType !== 'paragraph';
+    // return this.type === 'block' && this.nodeType !== 'paragraph';
+    return this.type === 'block';
   }
 
   attr(): string | undefined {

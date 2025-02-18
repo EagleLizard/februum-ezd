@@ -6,6 +6,7 @@ import * as commonmark from 'commonmark';
 
 import { DATA_DIR_PATH } from '../constants';
 import { ElToken } from '../el/el-token';
+import assert from 'assert';
 
 export async function md() {
   let test1FilePath = [
@@ -13,25 +14,19 @@ export async function md() {
     'md',
     // 'test1.md',
     'test2.md',
+    // 'test3_p.md',
   ].join(path.sep);
   let fileData = fs.readFileSync(test1FilePath).toString();
   let mdr = new commonmark.Parser();
   let parsed = mdr.parse(fileData);
-  traverse3(parsed);
+  let htmlStr = transformToHtml(parsed);
+  console.log({ htmlStr });
   let htmlr = new commonmark.HtmlRenderer();
-  let htmlStr = htmlr.render(parsed);
-  console.log(htmlStr);
+  let htmlStr2 = htmlr.render(parsed);
+  console.log({ htmlStr2 });
 }
 
-function traverse3(cmNode: commonmark.Node) {
-  let walker: commonmark.NodeWalker = cmNode.walker();
-  let currNodeStep: commonmark.NodeWalkingStep | null;
-  while((currNodeStep = walker.next()) !== null) {
-    let currNode = currNodeStep.node;
-    let nodeStr = `${currNode.type}${(currNode.literal !== null) ? ` - ${currNode.literal}` : ''}`;
-    console.log(nodeStr);
-  }
-
+function transformToHtml(cmNode: commonmark.Node) {
   let elStack: ElToken[] = [];
   function helper(currNode: commonmark.Node | null) {
     if(currNode === null) {
@@ -40,8 +35,8 @@ function traverse3(cmNode: commonmark.Node) {
     let currEl = nodeToEl(currNode);
     pushNode(currEl);
     helper(currNode.firstChild);
-    helper(currNode.next);
     popNode(currEl);
+    helper(currNode.next);
   }
   function popNode(currEl: ElToken) {
     let elem: ElToken | undefined;
@@ -87,8 +82,8 @@ function traverse3(cmNode: commonmark.Node) {
         || (currEl.nodeType === 'heading')
         || (currEl.nodeType === 'block_quote')
       );
-      let termPre = hasNewline ? '\n' : '';
-      let termVal = `${termPre}${termOpen}${innerTxt}${termClose}`;
+      let termNl = hasNewline ? '\n' : '';
+      let termVal = `${termOpen}${innerTxt}${termClose}${termNl}`;
       let termEl = new ElToken({
         type: 'term',
         val: termVal,
@@ -162,6 +157,6 @@ function traverse3(cmNode: commonmark.Node) {
   }
   
   helper(cmNode);
-  console.log('elStack');
-  console.log(elStack);
+  assert(elStack.length === 1);
+  return elStack[0].val;
 }
