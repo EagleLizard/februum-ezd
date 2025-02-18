@@ -115,29 +115,9 @@ function transformToHtml(cmNode: commonmark.Node) {
         });
         break;
       case 'paragraph':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
-        });
-        break;
       case 'strong':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
-        });
-        break;
       case 'emph':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
-        });
-        break;
       case 'block_quote':
-        el = new ElToken({
-          type: 'block',
-          nodeType: currNode.type,
-        });
-        break;
       case 'document':
         el = new ElToken({
           type: 'block',
