@@ -6,6 +6,7 @@ import { getLineReader } from '../line-reader';
 import { DATA_DIR_PATH } from '../constants';
 
 export async function mdMain() {
+  console.log('mdMain()');
   let tokenizer = MdTokenizer.init();
   let testFilePath = [
     DATA_DIR_PATH,
@@ -15,8 +16,8 @@ export async function mdMain() {
   let lr = getLineReader(testFilePath);
   let line: string | undefined;
   while((line = await lr.read()) !== undefined) {
-    console.log(line);
+    tokenizer.parse(line);
   }
-  console.log('mdMain()');
-  console.log(tokenizer);
+  
+  // console.log(tokenizer);
 }

@@ -4,6 +4,9 @@ export class MdTokenizer {
 
   parse(line: string) {
     console.log(line);
+    if(line.length > 0) {
+      //
+    }
   }
 
   static init(): MdTokenizer {
