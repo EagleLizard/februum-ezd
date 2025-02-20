@@ -1,5 +1,6 @@
 
 import { md } from './lib/md/md';
+import { mdMain } from './lib/md/md-main';
 
 (async () => {
   try {
@@ -13,4 +14,5 @@ import { md } from './lib/md/md';
 async function main() {
   console.log('hi ~');
   md();
+  await mdMain();
 }
