@@ -2,63 +2,126 @@
 import { MD_TOKEN_TYPE, MdToken } from './md-tokens/md-token';
 
 export type MdTokenizerNextRes = {
-
+  token: MdToken;
 } & {};
 
+type TK_STATE = 'INIT' | 'LINE_START' | 'LINE';
+
 export class MdTokenizer {
+  private lines: string[];
+
   line: number;
   col: number;
   readonly tokens: MdToken[];
+  charStack: string[];
+  state: TK_STATE;
   private constructor(
-    private lines: string[],
+    lines: string[],
   ) {
+    this.lines = lines;
+
     this.line = 0;
     this.col = 0;
     this.tokens = [];
+    this.charStack = [];
+    this.state = 'INIT';
   }
 
-  next(): MdTokenizerNextRes | undefined {
+  next(): MdToken | undefined {
     let token: MdToken | undefined;
     let currLine = this.getCurrLine();
     if(currLine === undefined) {
+      /* term */
+      token = termToken(this.line, this.col);
+      this.tokens.push(token);
       return;
     }
-    if(currLine.length < 1) {
-      /*
-        Empty line
-      _*/
-      token = emptyLineToken(this.line);
+    // console.log(this.state);
+    switch(this.state) {
+      case 'INIT':
+        this.state = 'LINE_START';
+        return this.next();
+      case 'LINE_START':
+        token = this.parseLineStart(currLine);
+        if(token === undefined) {
+          this.state = 'LINE';
+          return this.next();
+        }
+        if(token.len > 0) {
+          this.state = 'LINE';
+        }
+        this.tokens.push(token);
+        // return token;
+        break;
+      case 'LINE':
+        token = this.parseLine(currLine);
+        if(token?.type === 'NEWLINE') {
+          this.state = 'LINE_START';
+        }
+        if(token !== undefined) {
+          this.tokens.push(token);
+          // return token;
+        }
+        break;
+    }
+    return token;
+  }
+
+  private parseLine(currLine: string) {
+    if(this.col === currLine.length) {
+      let token = newlineToken(this.line, this.col);
       this.tokens.push(token);
       this.incLine();
       return token;
     }
-    if(this.col === 0) {
-      let rx: RegExp;
-      rx = getHeaderRx();
-      let rxExecRes = rx.exec(currLine);
-      if(rxExecRes !== null) {
-        let str = rxExecRes[0];
+    /*
+      For now, advance char-by-char.
+      Initially treating every char as plain text.
+      When block/inline parsing of other constructs, like
+        code blocks, emphasis, links, etc., those will be
+        detected here
+    _*/
+    let startCol = this.col;
+    while(this.col < currLine.length) {
+      let c = currLine[this.col];
+      this.charStack.push(c);
+      this.col++;
+    }
+    if(this.charStack.length > 0) {
+      let str = this.charStack.join('');
+      this.charStack.length = 0;
+      let token = MdToken.init('TEXT', this.line, startCol, str.length, {
+        str,
+      });
+      return token;
+    }
+  }
+
+  private parseLineStart(currLine: string) {
+    let token: MdToken | undefined;
+    let rx: RegExp;
+    if(currLine.length === 0) {
+      token = emptyLineToken(this.line);
+      this.incLine();
+      return token;
+    }
+    rx = getHeaderRx();
+    if(rx.test(currLine)) {
+      let rxRes = currLine.match(rx);
+      if(rxRes !== null) {
+        let str = rxRes[0];
         let level = str.trim().length;
-        token = headingToken(this.line, this.col, str.length, {
-          str,
-          level,
-        });
-        this.tokens.push(token);
-        this.incCol(token.len);
+        let len = str.length;
+        token = headingToken(this.line, this.col, len, str, level);
+        this.col += len;
         return token;
       }
     }
-    console.log(currLine);
-    console.log(`c: '${currLine[this.col]}'`);
   }
 
   private incLine() {
     this.line++;
     this.col = 0;
-  }
-
-  private incCol(len: number) {
-    this.col += len;
   }
 
   private getCurrLine(): string | undefined {
@@ -72,12 +135,23 @@ export class MdTokenizer {
   }
 }
 
+function newlineToken(line: number, col: number): MdToken {
+  return MdToken.init('NEWLINE', line, col, 0);
+}
+
+function termToken(line: number, col: number): MdToken {
+  return MdToken.init('TERM', line, col, 0);
+}
+
 function emptyLineToken(line: number): MdToken {
   return MdToken.init('EMPTY_LINE', line, 0, 0);
 }
 
-function headingToken(line: number, col: number, len: number, opts: { str: string, level: number }): MdToken {
-  return MdToken.init('ATX_HEADING', line, col, len, opts);
+function headingToken(line: number, col: number, len: number, str: string, level: number): MdToken {
+  return MdToken.init('ATX_HEADING', line, col, len, {
+    str,
+    level,
+  });
 }
 
 function getHeaderRx() {

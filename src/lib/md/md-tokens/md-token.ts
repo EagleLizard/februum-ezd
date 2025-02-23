@@ -1,5 +1,10 @@
 
-export type MD_TOKEN_TYPE = 'EMPTY_LINE' | 'ATX_HEADING';
+export type MD_TOKEN_TYPE = (
+  'EMPTY_LINE' | 'ATX_HEADING'
+  | 'TEXT'
+  | 'NEWLINE'
+  | 'TERM'
+);
 
 export type MdTokenOpts = {
   str?: string;
