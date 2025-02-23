@@ -8,6 +8,13 @@ const DATA_DIR_PATH = [
   DATA_DIR_NAME,
 ].join(path.sep);
 
+const TEST_DATA_DIR_NAME = 'test-data';
+const TEST_DATA_DIR_PATH = [
+  PROJECT_BASE_DIR,
+  TEST_DATA_DIR_NAME,
+].join(path.sep);
+
 export {
   DATA_DIR_PATH,
+  TEST_DATA_DIR_PATH,
 };
