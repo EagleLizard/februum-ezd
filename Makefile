@@ -6,4 +6,4 @@ watch-lua:
 run-js:
 	node dist/main.js
 watch-js:
-	fswatch -ro ./dist ./src ./data | xargs -n1 -I{} make run-js
+	fswatch -ro ./dist ./src ./data ./test-data | xargs -n1 -I{} make run-js

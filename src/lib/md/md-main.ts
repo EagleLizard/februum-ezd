@@ -25,12 +25,36 @@ function testInline1() {
   let nextRes: MdToken | undefined;
   let tokens: MdToken[] = [];
   while((nextRes = tokenizer.next()) !== undefined) {
-    console.log(nextRes.type);
-    if(nextRes.str !== undefined) {
-      console.log(nextRes);
-    }
     tokens.push(nextRes);
   }
+  /*
+    Reconstruct original markdown
+  _*/
+  let mdLines: string[] = [];
+  let currLine = '';
+  for(let i = 0; i < tokens.length; ++i) {
+    let token = tokens[i];
+    switch(token.type) {
+      case 'NEWLINE':
+        mdLines.push(currLine);
+        currLine = '';
+        break;
+      case 'TEXT':
+        currLine += token.str;
+        break;
+      case 'EMPTY_LINE':
+        mdLines.push('');
+        break;
+      case 'EMPHASIS_1':
+        currLine += '*';
+        break;
+      case 'EMPHASIS_2':
+        currLine += '_';
+        break;
+    }
+  }
+  let tokenData = mdLines.join('\n');
+  assert(mdData === tokenData);
 }
 
 function test1() {

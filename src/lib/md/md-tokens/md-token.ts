@@ -1,7 +1,7 @@
 
 export type MD_TOKEN_TYPE = (
   'EMPTY_LINE' | 'ATX_HEADING'
-  | 'TEXT'
+  | 'TEXT' | 'EMPHASIS_1' | 'EMPHASIS_2'
   | 'NEWLINE'
   | 'TERM'
 );

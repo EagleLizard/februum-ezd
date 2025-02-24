@@ -13,6 +13,6 @@ import { mdMain } from './lib/md/md-main';
 
 async function main() {
   console.log('hi ~');
-  md();
+  // md();
   await mdMain();
 }

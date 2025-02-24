@@ -1,4 +1,5 @@
 
+import { Stack } from '../datastruct/stack';
 import { MD_TOKEN_TYPE, MdToken } from './md-tokens/md-token';
 
 export type MdTokenizerNextRes = {
@@ -13,7 +14,7 @@ export class MdTokenizer {
   line: number;
   col: number;
   readonly tokens: MdToken[];
-  charStack: string[];
+  charStack: Stack<string>;
   state: TK_STATE;
   private constructor(
     lines: string[],
@@ -23,7 +24,7 @@ export class MdTokenizer {
     this.line = 0;
     this.col = 0;
     this.tokens = [];
-    this.charStack = [];
+    this.charStack = new Stack();
     this.state = 'INIT';
   }
 
@@ -71,6 +72,18 @@ export class MdTokenizer {
       this.incLine();
       return token;
     }
+    if(currLine[this.col] === '*') {
+      let token: MdToken;
+      token = emph1Token(this.line, this.col);
+      this.col += token.len;
+      return token;
+    }
+    if(currLine[this.col] === '_') {
+      let token: MdToken;
+      token = emph2Token(this.line, this.col);
+      this.col += token.len;
+      return token;
+    }
     /*
       For now, advance char-by-char.
       Initially treating every char as plain text.
@@ -79,17 +92,41 @@ export class MdTokenizer {
         detected here
     _*/
     let startCol = this.col;
-    while(this.col < currLine.length) {
-      let c = currLine[this.col];
+    let pos = startCol;
+    let i = 0;
+    while(pos < currLine.length) {
+      let c = currLine[pos];
+      let hasEmph = false;
+      if(
+        (c === '*')
+        || (c === '_')
+      ) {
+        /*
+          If there is an escape character '\', the number of escape
+            characters on the stack determines if the char is emphasis
+            or treated as a literal
+        _*/
+        let peekN = 0;
+        let escCount = 0;
+        while(this.charStack.peek(peekN++) === '\\') {
+          escCount++;
+        }
+        if((escCount % 2) === 0) {
+          hasEmph = true;
+        }
+      }
+      if(hasEmph) {
+        break;
+      }
       this.charStack.push(c);
-      this.col++;
+      i++;
+      pos = startCol + i;
     }
-    if(this.charStack.length > 0) {
-      let str = this.charStack.join('');
-      this.charStack.length = 0;
-      let token = MdToken.init('TEXT', this.line, startCol, str.length, {
-        str,
-      });
+    this.col = pos;
+    if(this.charStack.len() > 0) {
+      let str = this.charStack.arr.join('');
+      this.charStack.clear();
+      let token = textToken(this.line, startCol, str.length, str);
       return token;
     }
   }
@@ -130,6 +167,19 @@ export class MdTokenizer {
     let mdTokenizer = new MdTokenizer(lines);
     return mdTokenizer;
   }
+}
+
+function emph2Token(line: number, col: number) {
+  return MdToken.init('EMPHASIS_2', line, col, 1, { str: '_' });
+}
+function emph1Token(line: number, col: number) {
+  return MdToken.init('EMPHASIS_1', line, col, 1, { str: '*' });
+}
+
+function textToken(line: number, col: number, len: number, str: string) {
+  return MdToken.init('TEXT', line, col, len, {
+    str,
+  });
 }
 
 function newlineToken(line: number, col: number): MdToken {
