@@ -50,19 +50,16 @@ export class MdTokenizer {
         if(token.len > 0) {
           this.state = 'LINE';
         }
-        this.tokens.push(token);
-        // return token;
         break;
       case 'LINE':
         token = this.parseLine(currLine);
         if(token?.type === 'NEWLINE') {
           this.state = 'LINE_START';
         }
-        if(token !== undefined) {
-          this.tokens.push(token);
-          // return token;
-        }
         break;
+    }
+    if(token !== undefined) {
+      this.tokens.push(token);
     }
     return token;
   }

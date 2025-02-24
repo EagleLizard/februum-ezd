@@ -11,6 +11,26 @@ import assert from 'assert';
 export async function mdMain() {
   console.log('mdMain()');
   test1();
+  testInline1();
+}
+
+function testInline1() {
+  let testFilePath = [
+    TEST_DATA_DIR_PATH,
+    'md',
+    'test_inline-1.md',
+  ].join(path.sep);
+  let mdData = fs.readFileSync(testFilePath, {encoding: 'utf8'});
+  let tokenizer = MdTokenizer.init(mdData);
+  let nextRes: MdToken | undefined;
+  let tokens: MdToken[] = [];
+  while((nextRes = tokenizer.next()) !== undefined) {
+    console.log(nextRes.type);
+    if(nextRes.str !== undefined) {
+      console.log(nextRes);
+    }
+    tokens.push(nextRes);
+  }
 }
 
 function test1() {
