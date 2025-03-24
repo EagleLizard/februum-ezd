@@ -12,7 +12,7 @@ local ctx = {
 }
 
 local Obj = (function()
-  ---@class februum.Entity
+  ---@class februum.Obj
   ---@field id integer
   local Obj = {}
   Obj.__index = Obj
@@ -53,7 +53,7 @@ local Point = (function ()
 end)()
 
 local CircleObj = (function ()
-  ---@class februum.CircleObj
+  ---@class februum.CircleObj: februum.Obj
   ---@field r number
   ---@field pos februum.geom.Point
   local CircleObj = {}
@@ -67,36 +67,58 @@ local CircleObj = (function ()
     return self
   end
   function CircleObj:draw()
-    printf("(%s, %s) r: %s\n", self.pos.x, self.pos.y, self.r)
+    love.graphics.circle("line", self.pos.x, self.pos.y, self.r)
   end
   return CircleObj
 end)()
 
-local MouseCircle = (function ()
-  ---@class februum.MouseCircle
+local MouseFollower = (function ()
+  ---@class februum.MouseFollower: februum.Obj
   ---@field r number
   ---@field pos februum.geom.Point
-  local MouseCircle = {}
-  MouseCircle.__index = MouseCircle
-  setmetatable(MouseCircle, { __index = Obj })
+  local MouseFollower = {}
+  MouseFollower.__index = MouseFollower
+  setmetatable(MouseFollower, { __index = Obj })
 
-  function MouseCircle.new(x, y, r)
-    local self = setmetatable(Obj.new(), MouseCircle)
+  function MouseFollower.new(x, y, r)
+    local self = setmetatable(Obj.new(), MouseFollower)
     self.pos = Point.new(x, y)
-    self.r = r or 10
+    self.r = r or 15
     return self
   end
-  function MouseCircle:draw()
+  function MouseFollower:draw()
     love.graphics.circle("line", self.pos.x, self.pos.y, self.r)
   end
   ---comment
   ---@param world februum.World
-  function MouseCircle:update(world)
-    if world.mode then
-      
+  function MouseFollower:update(world)
+    if world.worldState.mouseFollow then
+      --[[ update position ]]
+      local mx, my = love.mouse.getPosition()
+      local dx = mx - self.pos.x
+      local dy = my - self.pos.y
+      -- printf("dx,dy: (%s, %s)\n", dx, dy)
+      if dx ~= 0 then
+        if dx < 1 then
+          --[[ move right ]]
+          self.pos.x = self.pos.x - 1
+        else
+          --[[ move left ]]
+          self.pos.x = self.pos.x + 1
+        end
+      end
+      if dy ~= 0 then
+        if dy < 1 then
+          --[[ move up ]]
+          self.pos.y = self.pos.y - 1
+        else
+          --[[ move down ]]
+          self.pos.y = self.pos.y + 1
+        end
+      end
     end
   end
-  return MouseCircle
+  return MouseFollower
 end)()
 
 local world_modes = {
@@ -110,10 +132,14 @@ local add_mode = {
 local modify_mode = {
   follow = "follow",
 }
+---@alias februum.WorldState { mouseFollow: boolean }
+
 local World = (function ()
   ---@class februum.World
   ---@field mode string
   ---@field modeState {subMode: string}
+  ---@field worldState februum.WorldState
+  ---@field objs februum.Obj[]
   local World = {}
   World.__index = World
   local function initModeState()
@@ -123,13 +149,36 @@ local World = (function ()
     local self = setmetatable({}, World)
     self.mode = world_modes.default
     self.modeState = initModeState()
+    self.worldState = {
+      mouseFollow = true,
+    }
+    self.objs = {}
     return self
+  end
+  function World:draw()
+    for _, o in ipairs(self.objs) do
+      o:draw()
+    end
+  end
+  function World:update()
+    for _, o in ipairs(self.objs) do
+      o:update(self)
+    end
+  end
+  ---add Obj (entity) to the world
+  ---@param o februum.Obj
+  function World:addObj(o)
+    --[[ 
+      TODO: make sure Objs with the same ID aren't added (no supes)
+        Every entity in the world should be unique(?)
+    ]]
+    table.insert(self.objs, o)
   end
   function World:keypressed(key, scancode, isrepeat)
     printf("world.keypressed: %s, %s, %s\n", key, scancode, isrepeat)
     if key == "escape" then
       self.mode = world_modes.default
-      self.modeState = initModeState()
+      self:resetModeState()
     end
     if self.mode == world_modes.add then
       if key == "c" then
@@ -137,11 +186,7 @@ local World = (function ()
       end
     elseif self.mode == world_modes.modify then
       if key == "f" then
-        if not self.modeState[modify_mode.follow] then
-          self.modeState[modify_mode.follow] = true
-        else
-          self.modeState[modify_mode.follow] = false
-        end
+        self.worldState.mouseFollow = not self.worldState.mouseFollow
       end
     else
       if key == "a" then
@@ -152,52 +197,42 @@ local World = (function ()
     end
   end
   function World:mousepressed(x, y, button, istouch, presses)
-    printf("world.mousepressed: %s, %s, %s, %s, %s", x, y, button, istouch, presses)
+    printf("world.mousepressed: %s, %s, %s, %s, %s\n", x, y, button, istouch, presses)
     printf("mode: %s\n", self.mode)
     if self.mode == world_modes.add then
       printf("subMode: %s\n", self.modeState.subMode)
       if self.modeState.subMode == add_mode.circle then
         printf("add circle at (%s, %s)\n", x, y)
-        self.modeState = initModeState()
+        local co = CircleObj.new(x, y, 10)
+        self:addObj(co)
+        --[[ reset state ]]
+        self:resetModeState()
       end
     end
   end
+
+  function World:resetModeState()
+    self.modeState = initModeState();
+  end
+
   return World
 end)()
 
--- function love.load()
---   ctx.frameCount = 0
--- end
-
-function love.keypressed(key, scancode, isrepeat)
-  ctx.world:keypressed(key, scancode, isrepeat)
-end
-function love.mousepressed(x, y, button, istouch, presses)
-  -- printf("mousepressed: %s, %s, %s, %s, %s\n", x, y, button, istouch, presses)
-  ctx.world:mousepressed(x, y, button, istouch, presses)
-end
-function love.update(dt)
-  -- print(dt)
-  ctx.dt = dt
-  ctx.sw = love.graphics.getWidth()
-  ctx.sh = love.graphics.getHeight()
-  if ctx.frameCount == nil then
-    ctx.frameCount = 0
-  else
-    ctx.frameCount = ctx.frameCount + 1
-  end
-  if ctx.world == nil then
-    ctx.world = World.new()
-  end
-end
-
-function love.draw()
+local function debugInfo()
   local dtStr = string.format("%f", ctx.dt);
   local screenStr = string.format("w: %d, h: %d", ctx.sw, ctx.sh)
   local lines = {}
   table.insert(lines, "hello ~ "..dtStr)
   table.insert(lines, screenStr)
   table.insert(lines, string.format("frame: %s", ctx.frameCount))
+  --[[ world statistics ]]
+  table.insert(lines, string.format("objs: %s", #ctx.world.objs))
+  --[[ world state ]]
+  table.insert(lines, "world.worldState:")
+  for k,v in pairs(ctx.world.worldState) do
+    table.insert(lines, string.format("  %s: %s", k, v))
+  end
+  --[[ input mode info ]]
   local modeStr = ctx.world.mode..":"..(ctx.world.modeState.subMode or "")
   table.insert(lines, string.format("mode: %s", modeStr))
   if ctx.world.mode ~= world_modes.default then
@@ -212,6 +247,7 @@ function love.draw()
       table.insert(lines, nextLine)
     end
   end
+
   local printStr = ""
   for _, line in ipairs(lines) do
     printStr = printStr..line.."\n"
@@ -219,6 +255,41 @@ function love.draw()
   -- print(printStr)
   -- love.graphics.print("hello ~ "..dtStr.."\n"..screenStr, 20, 20)
   love.graphics.print(printStr, 20, 20)
+end
+
+function love.keypressed(key, scancode, isrepeat)
+  ctx.world:keypressed(key, scancode, isrepeat)
+end
+
+function love.mousepressed(x, y, button, istouch, presses)
+  -- printf("mousepressed: %s, %s, %s, %s, %s\n", x, y, button, istouch, presses)
+  ctx.world:mousepressed(x, y, button, istouch, presses)
+end
+
+local function initWorld()
+  ctx.world = World.new()
+  local mfw = MouseFollower.new(ctx.sw/2, ctx.sh/2)
+  ctx.world:addObj(mfw)
+end
+
+function love.update(dt)
+  -- print(dt)
+  ctx.dt = dt
+  ctx.sw = love.graphics.getWidth()
+  ctx.sh = love.graphics.getHeight()
+  if ctx.frameCount == nil then
+    ctx.frameCount = 0
+  else
+    ctx.frameCount = ctx.frameCount + 1
+  end
+  if ctx.world == nil then
+    initWorld()
+  end
+  ctx.world:update()
+end
+
+function love.draw()
+  debugInfo()
   local lpsx = math.floor(ctx.sw / 2)
   local lpsy = math.floor(ctx.sh / 2)
   local lpex, lpey = love.mouse.getPosition()
@@ -227,4 +298,5 @@ function love.draw()
   -- love.graphics.circle("line", lpex, lpey, 10)
   -- love.graphics.line(lpsx, lpsy, lpsx, lpey)
   -- love.graphics.line(lpsx, lpey, lpex, lpey)
+  ctx.world:draw()
 end
